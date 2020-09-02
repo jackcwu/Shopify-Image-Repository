@@ -2,6 +2,7 @@
 # https://www.youtube.com/watch?v=QjtW-wnXlUY --> Flask intro
 # https://www.youtube.com/watch?v=6L3HNyXEais --> MySQL with Flask
 # https://www.youtube.com/watch?v=-cHS4HoEFV8 --> Path variables
+# https://help.pythonanywhere.com/pages/NoSuchFileOrDirectory/ --> saving stuff to file path system
 
 ##################### Logging in ###################################
 # echo %PATH$
@@ -10,6 +11,7 @@
 # py -m venv env
 # env\Scripts\activate
 
+import os
 from flask import Flask, jsonify, request, render_template, redirect, url_for
 from flask_mysqldb import MySQL
 import yaml
@@ -26,21 +28,33 @@ imageRepository.config['MYSQL_DB'] = db['mysql_db']
 
 mysql = MySQL(imageRepository)
 
-UPLOAD_FOLDER = '/images'
+# UPLOAD_FOLDER ='Users/jackc/Documents/Personal Projects/images/' #'/images/'
+UPLOAD_FOLDER = os.path.dirname(os.path.abspath(__file__))
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 imageRepository.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 @imageRepository.route('/', methods=['GET', 'POST'])
 def index():
-    if request.method == 'POST':
+    if request.method == 'POST': # upload image to folder and add to database
         # Fetch Form Data
-        userDetails = request.form 
-        path = userDetails['path']
-        name = 'cat.jpg'
-        cur = mysql.connection.cursor()
-        cur.execute("INSERT INTO images(path, name) VALUES(%s, %s)",(path, name)) # change user
-        mysql.connection.commit()
-        cur.close()
+        details = request.form 
+        keyword = details['keyword']
+        file = request.files['inputFile']
+
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            imagePath = os.path.join(imageRepository.config['UPLOAD_FOLDER'], filename)
+            file.save(imagePath)
+            
+            cur = mysql.connection.cursor()
+            cur.execute("INSERT INTO practice1(keyword, imagePath) VALUES(%s, %s)",(keyword, imagePath)) 
+            mysql.connection.commit()
+            cur.close()
+
         return redirect(url_for('index'))
 
     return render_template('index.html')

@@ -67,12 +67,6 @@ def index():
                 return render_template('display.html', details=details)
 
 
-
-
-
-            
-
-
     return render_template('index.html')
 
 

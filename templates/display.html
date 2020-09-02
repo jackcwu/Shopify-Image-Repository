@@ -1,0 +1,10 @@
+<table border="1">
+  {% for image in details %}
+  <tr>
+    <td>{{image[0]}}</td>
+    <td><img src={image[1].replace('\\', '/')} border=3 height=100 width=100></img></td>
+    <td>{{image[1].replace('\\', '/')}}</td>
+
+  </tr>
+  {% endfor %}
+</table>

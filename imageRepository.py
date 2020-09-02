@@ -40,24 +40,41 @@ def allowed_file(filename):
 @imageRepository.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST': # upload image to folder and add to database
-        # Fetch Form Data
-        details = request.form 
-        keyword = details['keyword']
-        file = request.files['inputFile']
+        if request.form["submitButton"] == 'ADD':
+            details = request.form 
+            keyword = details['keyword']
+            file = request.files['inputFile']
 
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            imagePath = os.path.join(imageRepository.config['UPLOAD_FOLDER'], filename)
-            file.save(imagePath)
-            
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                imagePath = os.path.join(imageRepository.config['UPLOAD_FOLDER'], filename)
+                file.save(imagePath)
+                
+                cur = mysql.connection.cursor()
+                cur.execute("INSERT INTO practice1(keyword, imagePath) VALUES(%s, %s)",(keyword, imagePath)) 
+                mysql.connection.commit()
+                cur.close()
+
+            return redirect(url_for('index'))
+
+        elif request.form["submitButton"] == 'SEARCH':
             cur = mysql.connection.cursor()
-            cur.execute("INSERT INTO practice1(keyword, imagePath) VALUES(%s, %s)",(keyword, imagePath)) 
-            mysql.connection.commit()
-            cur.close()
+            searchTerm = request.form['search']
+            count = cur.execute("SELECT * FROM practice1 WHERE keyword = %s" % ('\'' + searchTerm + '\'')) # https://stackoverflow.com/questions/48024806/flask-mysqldb-delete-from-variable-table
+            
+            if count > 0:
+                details = cur.fetchall()
+                return render_template('display.html', details=details)
 
-        return redirect(url_for('index'))
+
+
+
+
+            
+
 
     return render_template('index.html')
+
 
 if __name__ == '__main__':
     imageRepository.run(debug=True)
